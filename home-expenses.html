@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Home Expenses">
+<title>Home Expenses</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0c0b12;
+    --bg2: #13111e;
+    --bg3: #1a1728;
+    --border: #252238;
+    --border2: #322f50;
+    --text: #f0eeff;
+    --muted: #7b72a8;
+    --faint: #3a3560;
+    --purple: #a78bfa;
+    --purple-deep: #7c3aed;
+    --purple-bg: #2d1f5e;
+    --teal: #2dd4bf;
+    --teal-bg: #0d3330;
+    --coral: #fb923c;
+    --coral-bg: #3a1a05;
+    --font: 'DM Sans', system-ui, -apple-system, sans-serif;
+  }
+
+  html { background: var(--bg); }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    min-height: 100dvh;
+    max-width: 480px;
+    margin: 0 auto;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* ── Header ── */
+  .header {
+    padding: 52px 20px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    z-index: 10;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .header h1 {
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.4px;
+    color: var(--text);
+  }
+
+  .year-pill {
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 20px;
+    padding: 7px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--purple);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font);
+    user-select: none;
+    transition: background 0.15s;
+  }
+  .year-pill:active { background: var(--bg3); }
+
+  /* ── Metrics ── */
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    padding: 16px 20px;
+  }
+
+  .metric {
+    background: var(--bg2);
+    border-radius: 14px;
+    padding: 14px 10px;
+    border: 1px solid var(--border);
+  }
+
+  .metric-label {
+    font-size: 10px;
+    color: var(--muted);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    font-weight: 500;
+  }
+
+  .metric-value {
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+  }
+
+  .m-purple { color: var(--purple); }
+  .m-teal   { color: var(--teal); }
+  .m-coral  { color: var(--coral); }
+
+  /* ── Nav ── */
+  .nav {
+    display: flex;
+    background: var(--bg2);
+    border-radius: 14px;
+    margin: 0 20px 20px;
+    padding: 4px;
+    border: 1px solid var(--border);
+  }
+
+  .nav-btn {
+    flex: 1;
+    padding: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    font-family: var(--font);
+    border: none;
+    background: none;
+    color: var(--muted);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .nav-btn.active {
+    background: var(--purple-bg);
+    color: var(--purple);
+  }
+
+  /* ── Sections ── */
+  .section { display: none; padding: 0 20px; }
+  .section.active { display: block; }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 18px;
+    margin-bottom: 12px;
+  }
+
+  /* ── Category chips ── */
+  .field-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+  }
+
+  .cat-chips {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .cat-chip {
+    background: var(--bg);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 6px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: var(--font);
+    color: var(--muted);
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    line-height: 1.3;
+    user-select: none;
+  }
+
+  .cat-chip.sel-imp { border-color: var(--purple-deep); background: var(--purple-bg); color: var(--purple); }
+  .cat-chip.sel-rep { border-color: #0d9488; background: var(--teal-bg); color: var(--teal); }
+  .cat-chip.sel-app { border-color: #ea580c; background: var(--coral-bg); color: var(--coral); }
+
+  /* ── Form fields ── */
+  .field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .field-wrap { display: flex; flex-direction: column; gap: 6px; }
+
+  input, select, textarea {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    padding: 13px 14px;
+    font-size: 15px;
+    font-family: var(--font);
+    color: var(--text);
+    -webkit-appearance: none;
+    appearance: none;
+    transition: border-color 0.15s;
+  }
+
+  input::placeholder { color: var(--faint); }
+  input:focus, select:focus { outline: none; border-color: var(--purple-deep); }
+  select { background-image: none; }
+  select option { background: var(--bg2); }
+
+  .mb12 { margin-bottom: 12px; }
+
+  /* ── Add button ── */
+  .add-btn {
+    width: 100%;
+    background: var(--purple-deep);
+    border: none;
+    border-radius: 14px;
+    padding: 16px;
+    font-size: 16px;
+    font-weight: 600;
+    font-family: var(--font);
+    color: #fff;
+    cursor: pointer;
+    margin-top: 6px;
+    letter-spacing: 0.1px;
+    transition: opacity 0.15s, transform 0.1s;
+  }
+
+  .add-btn:active { opacity: 0.85; transform: scale(0.98); }
+
+  /* ── History ── */
+  .year-group { margin-bottom: 24px; }
+
+  .year-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    padding: 0 2px;
+  }
+
+  .year-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+  }
+
+  .year-total {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--purple);
+  }
+
+  .exp-item {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: border-color 0.15s;
+  }
+
+  .exp-item:active { border-color: var(--border2); }
+
+  .cat-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .dot-imp { background: var(--purple); }
+  .dot-rep { background: var(--teal); }
+  .dot-app { background: var(--coral); }
+
+  .exp-info { flex: 1; min-width: 0; }
+
+  .exp-desc {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .exp-meta {
+    font-size: 11px;
+    margin-top: 3px;
+    font-weight: 500;
+  }
+
+  .cat-imp { color: var(--purple); }
+  .cat-rep { color: var(--teal); }
+  .cat-app { color: var(--coral); }
+
+  .exp-right { text-align: right; flex-shrink: 0; }
+
+  .exp-amount {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.3px;
+  }
+
+  .exp-date {
+    font-size: 11px;
+    color: var(--faint);
+    margin-top: 3px;
+  }
+
+  .del-btn {
+    background: none;
+    border: none;
+    color: var(--faint);
+    font-size: 20px;
+    padding: 4px 6px;
+    cursor: pointer;
+    line-height: 1;
+    border-radius: 6px;
+    font-family: var(--font);
+    transition: color 0.15s;
+  }
+
+  .del-btn:active { color: #f87171; }
+
+  .empty {
+    padding: 48px 20px;
+    text-align: center;
+    color: var(--faint);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  /* ── Summary ── */
+  .chart-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 18px;
+    margin-bottom: 12px;
+  }
+
+  .chart-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-bottom: 14px;
+  }
+
+  .cat-legend {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+
+  .leg-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted);
+  }
+
+  .leg-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .chart-wrap {
+    position: relative;
+    width: 100%;
+    height: 200px;
+  }
+
+  .sum-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+  }
+
+  .sum-row:last-child {
+    border-bottom: none;
+    font-weight: 600;
+    color: var(--text);
+    padding-top: 14px;
+  }
+
+  .sum-label { color: var(--muted); font-weight: 500; }
+  .sum-pct { color: var(--faint); font-weight: 400; font-size: 12px; margin-left: 4px; }
+
+  /* ── Export ── */
+  .export-btn {
+    width: 100%;
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 14px;
+    padding: 15px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: var(--font);
+    color: var(--muted);
+    cursor: pointer;
+    margin-top: 4px;
+    letter-spacing: 0.1px;
+    transition: background 0.15s;
+  }
+
+  .export-btn:active { background: var(--bg3); }
+
+  /* ── Bottom safe area spacer ── */
+  .bottom-spacer { height: calc(24px + env(safe-area-inset-bottom, 0px)); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Home expenses</h1>
+  <button class="year-pill" onclick="cycleYear()">
+    <span id="yearDisplay">2026</span>
+    <span style="font-size:10px;opacity:0.6">▼</span>
+  </button>
+</div>
+
+<div class="metrics" id="metrics"></div>
+
+<div class="nav">
+  <button class="nav-btn active" onclick="switchTab('add',this)">Add</button>
+  <button class="nav-btn" onclick="switchTab('list',this)">History</button>
+  <button class="nav-btn" onclick="switchTab('summary',this)">Summary</button>
+</div>
+
+<!-- ADD -->
+<div id="sec-add" class="section active">
+  <div class="card">
+    <div class="field-label">Category</div>
+    <div class="cat-chips">
+      <button class="cat-chip sel-imp" id="chip-imp" onclick="selectCat('improvements')">Home<br>improvements</button>
+      <button class="cat-chip" id="chip-rep" onclick="selectCat('repairs')">Repairs &amp;<br>maintenance</button>
+      <button class="cat-chip" id="chip-app" onclick="selectCat('appliances')">Appliances</button>
+    </div>
+
+    <div class="field-row">
+      <div class="field-wrap">
+        <div class="field-label">Date</div>
+        <input type="date" id="f-date">
+      </div>
+      <div class="field-wrap">
+        <div class="field-label">Amount ($)</div>
+        <input type="number" id="f-amount" placeholder="0.00" step="0.01" inputmode="decimal">
+      </div>
+    </div>
+
+    <div class="field-label">Description</div>
+    <input type="text" id="f-desc" placeholder="What was it?" class="mb12">
+
+    <div class="field-label">Notes (optional)</div>
+    <input type="text" id="f-notes" placeholder="Receipt #, contractor…" class="mb12">
+
+    <button class="add-btn" onclick="addExpense()">Add expense</button>
+  </div>
+</div>
+
+<!-- HISTORY -->
+<div id="sec-list" class="section">
+  <div id="expenseList"></div>
+  <button class="export-btn" onclick="exportCSV()">Export all as CSV</button>
+  <div class="bottom-spacer"></div>
+</div>
+
+<!-- SUMMARY -->
+<div id="sec-summary" class="section">
+  <div class="chart-card">
+    <div class="chart-title">Spending by category</div>
+    <div class="cat-legend">
+      <div class="leg-item"><div class="leg-dot" style="background:#a78bfa"></div>Improvements</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#2dd4bf"></div>Repairs</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#fb923c"></div>Appliances</div>
+    </div>
+    <div class="chart-wrap"><canvas id="catChart" role="img" aria-label="Bar chart of spending by category"></canvas></div>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-title">Monthly spending — <span id="monthChartYear"></span></div>
+    <div class="chart-wrap"><canvas id="monthChart" role="img" aria-label="Line chart of monthly spending"></canvas></div>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-title">Totals by category</div>
+    <div id="summaryRows"></div>
+  </div>
+  <div class="bottom-spacer"></div>
+</div>
+
+<script>
+  const CAT_LABELS = { improvements: 'Home improvements', repairs: 'Repairs & maintenance', appliances: 'Appliances' };
+  const CAT_COLORS = { improvements: '#a78bfa', repairs: '#2dd4bf', appliances: '#fb923c' };
+
+  let expenses = [];
+  let selectedCat = 'improvements';
+  let currentYear = new Date().getFullYear();
+  let catChartInst = null, monthChartInst = null;
+
+  try { expenses = JSON.parse(localStorage.getItem('hexp_v2') || '[]'); } catch(e) {}
+
+  function save() { try { localStorage.setItem('hexp_v2', JSON.stringify(expenses)); } catch(e) {} }
+
+  function fmt(n) { return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
+  function selectCat(cat) {
+    selectedCat = cat;
+    document.querySelectorAll('.cat-chip').forEach(c => c.className = 'cat-chip');
+    const map = { improvements: ['chip-imp','sel-imp'], repairs: ['chip-rep','sel-rep'], appliances: ['chip-app','sel-app'] };
+    const [id, cls] = map[cat];
+    document.getElementById(id).classList.add(cls);
+  }
+
+  function addExpense() {
+    const date = document.getElementById('f-date').value;
+    const amount = parseFloat(document.getElementById('f-amount').value);
+    const desc = document.getElementById('f-desc').value.trim();
+    const notes = document.getElementById('f-notes').value.trim();
+    if (!date || isNaN(amount) || amount <= 0) { alert('Please enter a date and amount.'); return; }
+    expenses.push({ id: Date.now(), date, amount, cat: selectedCat, desc, notes });
+    save();
+    document.getElementById('f-amount').value = '';
+    document.getElementById('f-desc').value = '';
+    document.getElementById('f-notes').value = '';
+    refresh();
+  }
+
+  function deleteExpense(id) {
+    if (!confirm('Delete this expense?')) return;
+    expenses = expenses.filter(e => e.id !== id);
+    save(); refresh();
+  }
+
+  function allYears() {
+    const yrs = [...new Set([currentYear, ...expenses.map(e => new Date(e.date).getFullYear())])].sort((a,b) => b - a);
+    return yrs;
+  }
+
+  function cycleYear() {
+    const yrs = allYears();
+    const idx = yrs.indexOf(currentYear);
+    currentYear = yrs[(idx + 1) % yrs.length];
+    document.getElementById('yearDisplay').textContent = currentYear;
+    refresh();
+  }
+
+  function yearExp(y) { return expenses.filter(e => new Date(e.date).getFullYear() === (y || currentYear)); }
+
+  function refresh() {
+    renderMetrics();
+    renderList();
+    const activeSec = document.querySelector('.section.active');
+    if (activeSec && activeSec.id === 'sec-summary') renderSummary();
+  }
+
+  function renderMetrics() {
+    const yx = yearExp();
+    const total = yx.reduce((s,e) => s + e.amount, 0);
+    const imp = yx.filter(e => e.cat === 'improvements').reduce((s,e) => s + e.amount, 0);
+    const rep = yx.filter(e => e.cat === 'repairs').reduce((s,e) => s + e.amount, 0);
+    document.getElementById('metrics').innerHTML = `
+      <div class="metric"><div class="metric-label">Total ${currentYear}</div><div class="metric-value m-purple">$${fmt(total)}</div></div>
+      <div class="metric"><div class="metric-label">Improvements</div><div class="metric-value m-purple">$${fmt(imp)}</div></div>
+      <div class="metric"><div class="metric-label">Repairs</div><div class="metric-value m-teal">$${fmt(rep)}</div></div>
+    `;
+  }
+
+  function catClass(cat) { return cat === 'improvements' ? 'imp' : cat === 'repairs' ? 'rep' : 'app'; }
+
+  function renderList() {
+    const sorted = [...expenses].sort((a,b) => b.date.localeCompare(a.date));
+    if (!sorted.length) {
+      document.getElementById('expenseList').innerHTML = '<div class="empty">No expenses yet.<br>Add your first one above!</div>';
+      return;
+    }
+    const byYear = {};
+    sorted.forEach(e => { const y = new Date(e.date).getFullYear(); if (!byYear[y]) byYear[y] = []; byYear[y].push(e); });
+    const years = Object.keys(byYear).sort((a,b) => b - a);
+    document.getElementById('expenseList').innerHTML = years.map(y => {
+      const exps = byYear[y];
+      const total = exps.reduce((s,e) => s + e.amount, 0);
+      return `<div class="year-group">
+        <div class="year-header">
+          <span class="year-label">${y}</span>
+          <span class="year-total">$${fmt(total)}</span>
+        </div>
+        ${exps.map(e => `
+          <div class="exp-item">
+            <div class="cat-dot dot-${catClass(e.cat)}"></div>
+            <div class="exp-info">
+              <div class="exp-desc">${e.desc || CAT_LABELS[e.cat]}</div>
+              <div class="exp-meta cat-${catClass(e.cat)}">${CAT_LABELS[e.cat]}${e.notes ? ' · ' + e.notes : ''}</div>
+            </div>
+            <div class="exp-right">
+              <div class="exp-amount">$${fmt(e.amount)}</div>
+              <div class="exp-date">${e.date}</div>
+            </div>
+            <button class="del-btn" onclick="deleteExpense(${e.id})">×</button>
+          </div>
+        `).join('')}
+      </div>`;
+    }).join('');
+  }
+
+  function renderSummary() {
+    const yx = yearExp();
+    renderCatChart(yx);
+    renderMonthChart(yx);
+    renderSummaryRows(yx);
+    document.getElementById('monthChartYear').textContent = currentYear;
+  }
+
+  function renderCatChart(yx) {
+    const cats = ['improvements','repairs','appliances'];
+    const data = cats.map(c => +yx.filter(e => e.cat === c).reduce((s,e) => s + e.amount, 0).toFixed(2));
+    if (catChartInst) catChartInst.destroy();
+    catChartInst = new Chart(document.getElementById('catChart'), {
+      type: 'bar',
+      data: {
+        labels: ['Improvements','Repairs','Appliances'],
+        datasets: [{ data, backgroundColor: ['#a78bfa','#2dd4bf','#fb923c'], borderRadius: 8, borderSkipped: false }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { ticks: { callback: v => '$' + v.toLocaleString(), color: '#7b72a8', font: { size: 11, family: "'DM Sans', system-ui" } }, grid: { color: '#1a1728' }, border: { display: false } },
+          x: { ticks: { color: '#7b72a8', font: { size: 11, family: "'DM Sans', system-ui" } }, grid: { display: false }, border: { display: false } }
+        }
+      }
+    });
+  }
+
+  function renderMonthChart(yx) {
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const data = new Array(12).fill(0);
+    yx.forEach(e => { data[new Date(e.date).getMonth()] += e.amount; });
+    if (monthChartInst) monthChartInst.destroy();
+    monthChartInst = new Chart(document.getElementById('monthChart'), {
+      type: 'line',
+      data: {
+        labels: months,
+        datasets: [{
+          data: data.map(v => +v.toFixed(2)),
+          borderColor: '#7c3aed',
+          backgroundColor: 'rgba(124,58,237,0.12)',
+          tension: 0.4, fill: true,
+          pointRadius: 4,
+          pointBackgroundColor: '#a78bfa',
+          pointBorderColor: '#0c0b12',
+          pointBorderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { ticks: { callback: v => '$' + v.toLocaleString(), color: '#7b72a8', font: { size: 11, family: "'DM Sans', system-ui" } }, grid: { color: '#1a1728' }, border: { display: false } },
+          x: { ticks: { color: '#7b72a8', font: { size: 11, family: "'DM Sans', system-ui" }, maxRotation: 0 }, grid: { display: false }, border: { display: false } }
+        }
+      }
+    });
+  }
+
+  function renderSummaryRows(yx) {
+    const cats = ['improvements','repairs','appliances'];
+    const total = yx.reduce((s,e) => s + e.amount, 0);
+    document.getElementById('summaryRows').innerHTML = cats.map(c => {
+      const amt = yx.filter(e => e.cat === c).reduce((s,e) => s + e.amount, 0);
+      const pct = total > 0 ? Math.round(amt / total * 100) : 0;
+      return `<div class="sum-row">
+        <span class="sum-label cat-${catClass(c)}">${CAT_LABELS[c]}</span>
+        <span>$${fmt(amt)}<span class="sum-pct">${pct}%</span></span>
+      </div>`;
+    }).join('') + `<div class="sum-row"><span>Total ${currentYear}</span><span>$${fmt(total)}</span></div>`;
+  }
+
+  function switchTab(tab, btn) {
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.getElementById('sec-' + tab).classList.add('active');
+    if (tab === 'summary') renderSummary();
+  }
+
+  function exportCSV() {
+    if (!expenses.length) { alert('No expenses to export.'); return; }
+    const rows = [...expenses].sort((a,b) => b.date.localeCompare(a.date)).map(e =>
+      [e.date, CAT_LABELS[e.cat], e.amount.toFixed(2), e.desc || '', e.notes || '']
+        .map(v => `"${String(v).replace(/"/g, '""')}"`)
+        .join(',')
+    );
+    const csv = ['Date,Category,Amount,Description,Notes', ...rows].join('\n');
+    const a = document.createElement('a');
+    a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+    a.download = 'home-expenses.csv';
+    a.click();
+  }
+
+  document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
+  refresh();
+</script>
+</body>
+</html>
